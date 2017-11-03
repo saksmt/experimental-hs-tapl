@@ -1,56 +1,81 @@
 module Lambda.Parse where
 
 import Text.Parsec hiding (parse)
+import Text.Parsec.Language
+import Text.Parsec.Expr
 import Text.Parsec.String hiding (parse)
 import Lambda.Term
 import Control.Applicative((<*>), (<$>))
-import Control.Monad(join)
+import Control.Monad(join, when)
+import qualified Text.ParserCombinators.Parsec.Token as Token
+import Debug.Trace
+import Data.Char
+import Data.Maybe
 
-data Token = TAbs String | TName String | TPrio [Token] deriving Show
+letterButNotLambda :: Parser Char
+letterButNotLambda = satisfy (\x -> isAlpha x && x /= 'λ') <?> "letter"
 
-rawNameP = many1 $ letter <|> digit <|> char '-' <|> char '_'
+lambdaLangDef = emptyDef {
+  Token.commentLine = "//",
+  Token.commentStart = "/*",
+  Token.commentEnd = "*/",
+  Token.identStart = letterButNotLambda,
+  Token.identLetter = alphaNum,
+  Token.reservedNames = ["λ"],
+  Token.reservedOpNames = [ "\\", ".", "=" ]
+}
 
-abstractionP = do
-  spaces
-  char '\\' <|> char 'λ'
-  spaces
-  name <- rawNameP
-  spaces
-  char '.'
-  return $ TAbs name
+lexer = Token.makeTokenParser lambdaLangDef
 
-nameP :: Parser Token
-nameP = do
-  spaces
-  name <- rawNameP
-  spaces
-  return $ TName name
+identifier = Token.identifier lexer
+reservedOp = Token.reservedOp lexer
+reserved = Token.reserved lexer
+parens = Token.parens lexer
+whiteSpace = Token.whiteSpace lexer
+semi = Token.semi lexer
 
-prioP = do
-  spaces
-  char '('
-  spaces
-  tokens <- tokensP
-  spaces
-  char ')'
-  return $ TPrio tokens
+lambdaSign = char 'λ' >> whiteSpace
 
-tokenP = do
-  spaces
-  token <- abstractionP <|> nameP <|> prioP
-  spaces
-  return token
+absOp = lambdaSign <|> reservedOp "\\"
+absP' = do
+  absOp
+  name <- identifier
+  reservedOp "."
+  body <- exprP
+  return $ TAbstraction (VariableName name) body
+absP = absP' <|> parens absP'
 
-tokensP :: Parser [Token]
-tokensP = do
-  spaces
-  tokens <- many tokenP
-  spaces
-  return tokens
+variableP' = do
+  eqSign <- lookAhead (optionMaybe $ try $ identifier >> reservedOp "=")
+  when (isJust eqSign) $ parserFail "Unexpected attempt to parse variable assignment"
+  name <- identifier
+  return $ TVarRef $ VariableName name
 
-parse (TAbs name:rest) = TAbstraction (VariableName name) <$> parse rest
-parse [TName name] = Just $ TVarRef $ VariableName name
-parse (TName name:rest) = TApplication (TVarRef $ VariableName name) <$> parse rest
-parse [TPrio tokens] = parse tokens
-parse (TPrio tokens:rest) = Just TApplication <*> parse tokens <*> parse rest
-parse [] = Nothing
+variableP = variableP' <|> parens variableP'
+
+operandsP = parens (try totalApp <|> try absP) <|> variableP
+
+totalApp = foldl1 TApplication <$> many1 operandsP
+
+exprP = try totalApp <|> try absP <|> variableP
+
+allOf :: Parser a -> Parser [a]
+allOf p = do
+  whiteSpace
+  v <- many1 p
+  eof
+  return v
+
+m1 << m2 = do
+  x <- m1
+  m2
+  return x
+
+lineP = do
+  whiteSpace
+  name <- identifier
+  reservedOp "="
+  value <- exprP
+  return Scope { parent = Nothing, variables = [(VariableName name, value)] }
+
+fileP = mconcat . mconcat <$> allOf (lineP `sepEndBy1` semi)

@@ -1,0 +1,21 @@
+// this is almost (except for issues with beta-reduction due to missing alpha-reduction/De Bruijn index) valid
+// example file which can be executed via `stack exec tapl-exe -- -f example.la`
+
+/** identity function */
+id = λidx . idx
+
+/** `true`, `false`, `not`, `or`, `and` - Church booleans */
+true = λtt . λtf . tt
+false = λft . λff . ff
+not = λnp . λnt . λnf . np nf nt
+or = λoa . λob . λot . λof . (oa (true ot)) (ob ot) of
+and = λaa . λab . not (or (not aa) (not ab))
+
+/** conditional expressions */
+if = λip . λit . λif . ip it if
+
+/** debug function displaying boolean in human-readable format, possible due to handling of unknown variables */
+showBool = λb . b TRUE FALSE
+
+// main function, every .la file MUST contain it to be parsed correctly (may change some day)
+main = showBool (not false)
