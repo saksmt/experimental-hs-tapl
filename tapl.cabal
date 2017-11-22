@@ -15,7 +15,15 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Arith.Term, Lambda.Term, Lambda.Reduce, Lambda.Parse, Lambda
+  exposed-modules:     Arith.Term
+                     , Lambda.Term
+                     , Lambda.Reduce.Alpha
+                     , Lambda.Reduce.Beta
+                     , Lambda.Reduce.Context
+                     , Lambda.Reduce.Show
+                     , Lambda.Reduce
+                     , Lambda.Parse
+                     , Lambda
   build-depends:       base >= 4.7 && < 5
                      , parsec
                      , mtl
