@@ -3,9 +3,11 @@ module Lambda.Reduce.Show
     , showAlphaTerm
     , dumpScope
     , dumpScope'
+    , dumpContext
     ) where
 
 import Lambda.Term
+import Lambda.Reduce.Alpha
 import Data.List(intercalate)
 
 showTerm (TUndefined term) = showTerm term
@@ -30,6 +32,13 @@ showAlphaTerm (AApplication body param) = "(" ++ (showAlphaTerm body) ++ ") (" +
 showAlphaTerm (AVariable name index) = " " ++ show index
 showAlphaTerm (AUnresolvedVariable name) = " " ++ name
 showAlphaTerm (AUndefined term) = showAlphaTerm term
+
+dumpContext (cutoff, vars) = foldl1 (++) $
+    [ "Global cutoff: "
+    , show cutoff
+    , "\n"
+    ] ++ varDump
+    where varDump = map (\(k, v) -> show k ++ " == " ++ showAlphaTerm v ++ " // " ++ (showTerm $ fromAlpha v) ++ "\n") $ zip [0..] $ map alphaVarValue vars
 
 -- Predicates
 

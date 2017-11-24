@@ -15,7 +15,12 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Arith.Term
+  exposed-modules:     Util.Trace.Class
+                     , Util.Trace.Log
+                     , Util.Trace.Dumpable
+                     , Util.Trace.Impl
+                     , Util.Trace
+                     , Arith.Term
                      , Lambda.Term
                      , Lambda.Reduce.Alpha
                      , Lambda.Reduce.Beta
