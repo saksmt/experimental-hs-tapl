@@ -1,5 +1,7 @@
 module Util.Trace.Log where
 
+import Data.List (intercalate)
+
 data LogLevel = LogLevelTrace
               | LogLevelDebug
               | LogLevelInfo
@@ -30,4 +32,8 @@ loggerSettings = LoggerSettings
     }
 
 class Log l where
-    printLog :: LoggerSettings -> l -> IO ()
+    {-# MINIMAL toLogLines #-}
+    toLogLines :: LoggerSettings -> l -> [String]
+    printLogs :: LoggerSettings -> l -> IO ()
+    printLogs s l = putStrLn $ intercalate "\n" $ toLogLines s l
+

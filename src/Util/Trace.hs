@@ -5,8 +5,10 @@ module Util.Trace
     ( module Util.Trace.Dumpable
     , module Util.Trace.Class
     , module Util.Trace.Impl
+    , module Util.Trace.Log
     ) where
 
 import Util.Trace.Dumpable
 import Util.Trace.Impl
 import Util.Trace.Class
+import Util.Trace.Log
